@@ -106,8 +106,13 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
         const data = await res.json();
         if (res.ok) newUrls.push(data.url);
       }
-      update("imageUrls", [...form.imageUrls, ...newUrls]);
-      update("imageAlts", [...form.imageAlts, ...newUrls.map(() => form.name || "Perfume JMC")]);
+      // Functional updates so a slow upload can never clobber other edits
+      // made (or a submit that fired) while it was in flight.
+      setForm((f) => ({
+        ...f,
+        imageUrls: [...f.imageUrls, ...newUrls],
+        imageAlts: [...f.imageAlts, ...newUrls.map(() => f.name || "Perfume JMC")],
+      }));
     } finally {
       setUploading(false);
     }
@@ -116,6 +121,11 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
   async function onSubmit(e: React.FormEvent, publish?: boolean) {
     e.preventDefault();
     setError(null);
+
+    if (uploading) {
+      setError("Espera a que termine de subirse la imagen antes de guardar.");
+      return;
+    }
 
     if (form.variants.length > 0) {
       const invalid = form.variants.some((v) => v.sizeMl <= 0 || v.price < 0 || v.stock < 0);
@@ -130,7 +140,7 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
       const payload = {
         ...form,
         slug: form.slug || slugify(form.name),
-        published: publish ?? form.published,
+        published: publish === undefined ? form.published : publish,
       };
       const url = form.id ? `/api/admin/products/${form.id}` : "/api/admin/products";
       const method = form.id ? "PATCH" : "POST";
@@ -321,19 +331,19 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
         <div className="flex gap-3 pt-4">
           <button
             type="button"
-            disabled={saving}
-            onClick={(e) => onSubmit(e as unknown as React.FormEvent, false)}
-            className="border border-secondary text-secondary rounded px-4 py-2 text-sm"
+            disabled={saving || uploading}
+            onClick={(e) => onSubmit(e as unknown as React.FormEvent)}
+            className="border border-secondary text-secondary rounded px-4 py-2 text-sm disabled:opacity-50"
           >
             Guardar borrador
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || uploading}
             onClick={(e) => onSubmit(e as unknown as React.FormEvent, true)}
-            className="bg-secondary hover:bg-accent transition text-white rounded px-4 py-2 text-sm"
+            className="bg-secondary hover:bg-accent transition text-white rounded py-2 px-4 text-sm disabled:opacity-50"
           >
-            {saving ? "Guardando..." : "Publicar"}
+            {saving ? "Guardando..." : uploading ? "Subiendo imagen..." : "Publicar"}
           </button>
         </div>
       </div>
