@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { CartProvider } from "@/components/shop/CartProvider";
 import { ShopHeader } from "@/components/shop/Header";
 import { ShopFooter } from "@/components/shop/Footer";
+import { WhatsAppButton } from "@/components/shop/WhatsAppButton";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <ShopHeader categories={categories || []} />
       <main>{children}</main>
       <ShopFooter />
+      <WhatsAppButton />
     </CartProvider>
   );
 }
