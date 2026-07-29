@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { withVariantPricing } from "@/lib/products-display";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
       query = query.order("featured", { ascending: false });
   }
 
-  const { data: products } = await query;
+  const { data: productsRaw } = await query;
+  const products = await withVariantPricing(productsRaw || []);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">

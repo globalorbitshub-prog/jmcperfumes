@@ -11,6 +11,7 @@ export interface ProductCardData {
   featured?: boolean;
   rating?: number;
   reviewCount?: number;
+  fromPrice?: boolean;
 }
 
 export function ProductCard({ product }: { product: ProductCardData }) {
@@ -54,7 +55,9 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             <span className="text-primary/50">({product.reviewCount || 0})</span>
           </div>
         )}
-        <div className="font-heading text-lg text-accent mt-1">{formatEUR(product.price)}</div>
+        <div className="font-heading text-lg text-accent mt-1">
+          {product.fromPrice ? `Desde ${formatEUR(product.price)}` : formatEUR(product.price)}
+        </div>
       </div>
     </Link>
   );

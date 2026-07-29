@@ -9,6 +9,12 @@ interface Category {
   name: string;
 }
 
+interface Variant {
+  sizeMl: number;
+  price: number;
+  stock: number;
+}
+
 interface ProductFormValues {
   id?: string;
   name: string;
@@ -29,6 +35,7 @@ interface ProductFormValues {
   featured: boolean;
   imageUrls: string[];
   imageAlts: string[];
+  variants: Variant[];
 }
 
 const EMPTY: ProductFormValues = {
@@ -50,6 +57,7 @@ const EMPTY: ProductFormValues = {
   featured: false,
   imageUrls: [],
   imageAlts: [],
+  variants: [],
 };
 
 export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> }) {
@@ -68,6 +76,23 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
 
   function update<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function updateVariant(index: number, patch: Partial<Variant>) {
+    const next = [...form.variants];
+    next[index] = { ...next[index], ...patch };
+    update("variants", next);
+  }
+
+  function addVariant() {
+    update("variants", [...form.variants, { sizeMl: 0, price: 0, stock: 0 }]);
+  }
+
+  function removeVariant(index: number) {
+    update(
+      "variants",
+      form.variants.filter((_, i) => i !== index)
+    );
   }
 
   async function uploadFiles(files: FileList) {
@@ -91,6 +116,15 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
   async function onSubmit(e: React.FormEvent, publish?: boolean) {
     e.preventDefault();
     setError(null);
+
+    if (form.variants.length > 0) {
+      const invalid = form.variants.some((v) => v.sizeMl <= 0 || v.price < 0 || v.stock < 0);
+      if (invalid) {
+        setError("Revisa las variantes: el tamaño debe ser mayor que 0, y precio/stock no pueden ser negativos.");
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -152,29 +186,79 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
             ))}
           </select>
         </Field>
+
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Precio (€) *">
+          <Field label={form.variants.length > 0 ? "Precio base (no se usa)" : "Precio (€) *"}>
             <input
-              required
+              required={form.variants.length === 0}
+              disabled={form.variants.length > 0}
               type="number"
               step="0.01"
               min="0"
               value={form.price}
               onChange={(e) => update("price", parseFloat(e.target.value))}
-              className="input"
+              className="input disabled:opacity-50"
             />
           </Field>
-          <Field label="Stock *">
+          <Field label={form.variants.length > 0 ? "Stock base (no se usa)" : "Stock *"}>
             <input
-              required
+              required={form.variants.length === 0}
+              disabled={form.variants.length > 0}
               type="number"
               min="0"
               value={form.stock}
               onChange={(e) => update("stock", parseInt(e.target.value, 10))}
-              className="input"
+              className="input disabled:opacity-50"
             />
           </Field>
         </div>
+
+        <div className="border border-border rounded p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-primary text-sm">Variantes de tamaño (ml) — opcional</h3>
+            <button type="button" onClick={addVariant} className="text-secondary text-xs underline">
+              + Añadir tamaño
+            </button>
+          </div>
+          <p className="text-xs text-primary/50">
+            Úsalo para decants u otros formatos con varios tamaños y precios (ej. 2ml, 5ml, 10ml). Si añades
+            al menos uno, el precio/stock de arriba se ignora y el cliente elige el tamaño en la ficha del producto.
+          </p>
+          {form.variants.map((v, i) => (
+            <div key={i} className="grid grid-cols-4 gap-2 items-center">
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                placeholder="ml"
+                value={v.sizeMl || ""}
+                onChange={(e) => updateVariant(i, { sizeMl: parseFloat(e.target.value) || 0 })}
+                className="input"
+              />
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Precio €"
+                value={v.price || ""}
+                onChange={(e) => updateVariant(i, { price: parseFloat(e.target.value) || 0 })}
+                className="input"
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Stock"
+                value={v.stock || ""}
+                onChange={(e) => updateVariant(i, { stock: parseInt(e.target.value, 10) || 0 })}
+                className="input"
+              />
+              <button type="button" onClick={() => removeVariant(i)} className="text-error text-xs">
+                Eliminar
+              </button>
+            </div>
+          ))}
+        </div>
+
         <Field label="Descripción corta *">
           <textarea
             required
@@ -268,9 +352,19 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
             )}
             <div className="p-3">
               <div className="font-medium text-primary">{form.name || "Nombre del producto"}</div>
-              <div className="text-accent font-heading text-lg">
-                {form.price ? `${form.price.toFixed(2)} €` : "0,00 €"}
-              </div>
+              {form.variants.length > 0 ? (
+                <div className="text-accent font-heading text-lg">
+                  Desde{" "}
+                  {Math.min(...form.variants.map((v) => v.price || Infinity)) === Infinity
+                    ? "0,00"
+                    : Math.min(...form.variants.map((v) => v.price || Infinity)).toFixed(2)}{" "}
+                  €
+                </div>
+              ) : (
+                <div className="text-accent font-heading text-lg">
+                  {form.price ? `${form.price.toFixed(2)} €` : "0,00 €"}
+                </div>
+              )}
             </div>
           </div>
         </div>

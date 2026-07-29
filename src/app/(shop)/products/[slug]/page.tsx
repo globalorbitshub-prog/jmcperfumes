@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { formatEUR } from "@/lib/utils";
 import { AddToCartControls } from "@/components/shop/AddToCartControls";
 import { ReviewForm } from "@/components/shop/ReviewForm";
 
@@ -36,12 +35,25 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   if (!product) notFound();
 
   const supabase = getSupabaseAdmin();
-  const { data: reviews } = await supabase
-    .from("reviews")
-    .select("*")
-    .eq("product_id", product.id)
-    .eq("verified", true)
-    .order("created_at", { ascending: false });
+  const [{ data: reviews }, { data: variantRows }] = await Promise.all([
+    supabase
+      .from("reviews")
+      .select("*")
+      .eq("product_id", product.id)
+      .eq("verified", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("product_variants")
+      .select("id, size_ml, price, stock")
+      .eq("product_id", product.id)
+      .order("order"),
+  ]);
+  const variants = (variantRows || []).map((v) => ({
+    id: v.id,
+    sizeMl: Number(v.size_ml),
+    price: Number(v.price),
+    stock: v.stock,
+  }));
 
   const reviewCount = reviews?.length || 0;
   const avgRating = reviewCount
@@ -119,15 +131,19 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               {"☆".repeat(5 - Math.round(Number(avgRating)))} {avgRating} ({reviewCount} reseñas)
             </div>
           )}
-          <div className="font-heading text-3xl text-accent mt-3">{formatEUR(Number(product.price))}</div>
-          <p className={`text-sm mt-1 ${product.stock > 0 ? "text-success" : "text-primary/50"}`}>
-            {product.stock > 0 ? "✓ Disponible" : "Agotado"}
-          </p>
-          {product.stock > 0 && product.stock < 5 && (
-            <p className="text-warning text-sm">Quedan {product.stock} unidades</p>
-          )}
+          <div className="mt-4">
+            <AddToCartControls
+              productId={product.id}
+              name={product.name}
+              slug={product.slug}
+              price={Number(product.price)}
+              image={product.image_urls?.[0] || null}
+              stock={product.stock}
+              variants={variants}
+            />
+          </div>
 
-          <p className="text-primary/80 mt-4">{product.description}</p>
+          <p className="text-primary/80 mt-6">{product.description}</p>
           {product.description_long && (
             <p className="text-primary/70 mt-2 text-sm">{product.description_long}</p>
           )}
@@ -151,17 +167,6 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               )}
             </div>
           )}
-
-          <div className="mt-6">
-            <AddToCartControls
-              productId={product.id}
-              name={product.name}
-              slug={product.slug}
-              price={Number(product.price)}
-              image={product.image_urls?.[0] || null}
-              stock={product.stock}
-            />
-          </div>
 
           <div className="mt-6 text-sm text-primary/70 space-y-1">
             <p>✓ Envío gratis en pedidos superiores a 50€</p>

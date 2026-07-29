@@ -14,6 +14,12 @@ export default async function EditProductPage({ params }: { params: { id: string
 
   if (!product) notFound();
 
+  const { data: variants } = await supabase
+    .from("product_variants")
+    .select("size_ml, price, stock")
+    .eq("product_id", params.id)
+    .order("order");
+
   return (
     <div className="space-y-4">
       <h1 className="font-heading text-2xl text-primary">Editar producto</h1>
@@ -38,6 +44,11 @@ export default async function EditProductPage({ params }: { params: { id: string
           featured: product.featured,
           imageUrls: product.image_urls || [],
           imageAlts: product.image_alts || [],
+          variants: (variants || []).map((v) => ({
+            sizeMl: Number(v.size_ml),
+            price: Number(v.price),
+            stock: v.stock,
+          })),
         }}
       />
     </div>

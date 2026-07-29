@@ -24,7 +24,7 @@ export default function CartPage() {
       <div className="lg:col-span-2 space-y-3">
         <h1 className="font-heading text-2xl text-primary mb-4">Tu carrito</h1>
         {items.map((item) => (
-          <div key={item.productId} className="flex items-center gap-4 bg-white border border-border rounded p-3">
+          <div key={`${item.productId}-${item.variantId ?? ""}`} className="flex items-center gap-4 bg-white border border-border rounded p-3">
             {item.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded" />
@@ -35,19 +35,20 @@ export default function CartPage() {
               <Link href={`/products/${item.slug}`} className="font-medium text-primary hover:text-secondary">
                 {item.name}
               </Link>
+              {item.sizeMl != null && <div className="text-xs text-primary/50">{item.sizeMl} ml</div>}
               <div className="text-sm text-primary/60">{formatEUR(item.price)}</div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="w-7 h-7 border border-border rounded">
+              <button onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)} className="w-7 h-7 border border-border rounded">
                 −
               </button>
               <span className="w-6 text-center">{item.quantity}</span>
-              <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="w-7 h-7 border border-border rounded">
+              <button onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)} className="w-7 h-7 border border-border rounded">
                 +
               </button>
             </div>
             <div className="w-20 text-right font-medium">{formatEUR(item.price * item.quantity)}</div>
-            <button onClick={() => removeItem(item.productId)} className="text-error text-sm">
+            <button onClick={() => removeItem(item.productId, item.variantId)} className="text-error text-sm">
               ×
             </button>
           </div>

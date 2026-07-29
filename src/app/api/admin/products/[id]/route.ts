@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getAdminSession } from "@/lib/admin/session";
 import { writeAuditLog } from "@/lib/admin/audit";
+import { syncProductVariants } from "@/lib/admin/variants";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getAdminSession();
@@ -15,7 +16,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
-  return NextResponse.json({ product: data });
+
+  const { data: variants } = await supabase
+    .from("product_variants")
+    .select("*")
+    .eq("product_id", params.id)
+    .order("order");
+
+  return NextResponse.json({ product: data, variants: variants || [] });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -54,6 +62,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (body.variants !== undefined) {
+    await syncProductVariants(params.id, body.variants);
+  }
 
   await writeAuditLog({
     adminId: session.adminId,

@@ -7,7 +7,7 @@ const HOLD_MINUTES = 5;
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const items = body?.items as { productId: string; quantity: number }[] | undefined;
+  const items = body?.items as { productId: string; variantId?: string | null; quantity: number }[] | undefined;
   const customer = body?.customer;
   const country = customer?.country || "ES";
 
@@ -31,11 +31,13 @@ export async function POST(req: NextRequest) {
   await supabase.from("order_holds").delete().lt("expires_at", new Date().toISOString());
 
   for (const line of quote.lines) {
-    const { data: activeHolds } = await supabase
+    let holdsQuery = supabase
       .from("order_holds")
       .select("quantity")
       .eq("product_id", line.productId)
       .neq("user_email", customer.email);
+    holdsQuery = line.variantId ? holdsQuery.eq("variant_id", line.variantId) : holdsQuery.is("variant_id", null);
+    const { data: activeHolds } = await holdsQuery;
     const heldQty = (activeHolds || []).reduce((sum, h) => sum + h.quantity, 0);
     if (line.stock - heldQty < line.quantity) {
       return NextResponse.json(
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
   await supabase.from("order_holds").insert(
     quote.lines.map((line) => ({
       product_id: line.productId,
+      variant_id: line.variantId,
       user_email: customer.email,
       quantity: line.quantity,
       expires_at: expiresAt,
@@ -81,7 +84,14 @@ export async function POST(req: NextRequest) {
       postalCode: customer.postalCode,
       country,
       lines: JSON.stringify(
-        quote.lines.map((l) => ({ id: l.productId, n: l.name, q: l.quantity, p: l.price }))
+        quote.lines.map((l) => ({
+          id: l.productId,
+          vid: l.variantId,
+          n: l.name,
+          ml: l.sizeMl,
+          q: l.quantity,
+          p: l.price,
+        }))
       ),
       subtotal: String(quote.subtotal),
       tax: String(quote.tax),

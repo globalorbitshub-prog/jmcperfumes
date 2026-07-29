@@ -2,12 +2,13 @@ import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { NewsletterPopup } from "@/components/shop/NewsletterPopup";
+import { withVariantPricing } from "@/lib/products-display";
 
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
   const supabase = getSupabaseAdmin();
-  const [{ data: featured }, { data: categories }] = await Promise.all([
+  const [{ data: featuredRaw }, { data: categories }] = await Promise.all([
     supabase
       .from("products")
       .select("id, name, slug, price, stock, image_urls, featured")
@@ -16,6 +17,7 @@ export default async function LandingPage() {
       .limit(4),
     supabase.from("categories").select("*").order("order").limit(4),
   ]);
+  const featured = await withVariantPricing(featuredRaw || []);
 
   return (
     <div>

@@ -9,7 +9,9 @@ export const runtime = "nodejs";
 
 interface MetadataLine {
   id: string;
+  vid: string | null;
   n: string;
+  ml: number | null;
   q: number;
   p: number;
 }
@@ -67,7 +69,9 @@ export async function POST(req: NextRequest) {
         country: meta.country,
         products_json: lines.map((l) => ({
           product_id: l.id,
-          product_name: l.n,
+          variant_id: l.vid || null,
+          product_name: l.ml ? `${l.n} (${l.ml}ml)` : l.n,
+          size_ml: l.ml || null,
           quantity: l.q,
           price_at_order: l.p,
         })),
@@ -87,8 +91,20 @@ export async function POST(req: NextRequest) {
     }
 
     for (const line of lines) {
-      await supabase.rpc("decrement_product_stock", { p_id: line.id, p_qty: line.q }).then(
-        async (res) => {
+      if (line.vid) {
+        await supabase.rpc("decrement_variant_stock", { v_id: line.vid, v_qty: line.q }).then(async (res) => {
+          if (res.error) {
+            const { data: variant } = await supabase.from("product_variants").select("stock").eq("id", line.vid).maybeSingle();
+            if (variant) {
+              await supabase
+                .from("product_variants")
+                .update({ stock: Math.max(0, variant.stock - line.q) })
+                .eq("id", line.vid);
+            }
+          }
+        });
+      } else {
+        await supabase.rpc("decrement_product_stock", { p_id: line.id, p_qty: line.q }).then(async (res) => {
           if (res.error) {
             // Fallback if the RPC function doesn't exist yet — non-atomic but functional.
             const { data: product } = await supabase.from("products").select("stock").eq("id", line.id).maybeSingle();
@@ -99,8 +115,8 @@ export async function POST(req: NextRequest) {
                 .eq("id", line.id);
             }
           }
-        }
-      );
+        });
+      }
     }
 
     await supabase.from("order_holds").delete().eq("user_email", customerEmail);

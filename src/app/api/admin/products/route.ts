@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { getAdminSession } from "@/lib/admin/session";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { slugify } from "@/lib/utils";
+import { syncProductVariants } from "@/lib/admin/variants";
 
 export async function GET(req: NextRequest) {
   const session = await getAdminSession();
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (body.variants !== undefined) {
+    await syncProductVariants(data.id, body.variants);
+  }
 
   await writeAuditLog({
     adminId: session.adminId,

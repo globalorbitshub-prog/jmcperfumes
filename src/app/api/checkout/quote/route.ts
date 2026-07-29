@@ -11,8 +11,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const quote = await computeQuote(
-      items.map((i: { productId: string; quantity: number }) => ({
+      items.map((i: { productId: string; variantId?: string | null; quantity: number }) => ({
         productId: i.productId,
+        variantId: i.variantId ?? null,
         quantity: i.quantity,
       })),
       country
