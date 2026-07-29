@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WHATSAPP_URL, INSTAGRAM_URL } from "@/lib/social";
 
 export function ShopFooter() {
   return (
@@ -8,14 +9,11 @@ export function ShopFooter() {
           <div className="font-heading text-xl mb-2">JMC Perfumes</div>
           <p className="text-cream/70">Perfumes premium desde 2024.</p>
           <div className="flex gap-3 mt-3 text-cream/70">
-            <a href="https://instagram.com" target="_blank" rel="noreferrer">
+            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
               Instagram
             </a>
-            <a href="https://pinterest.com" target="_blank" rel="noreferrer">
-              Pinterest
-            </a>
-            <a href="https://tiktok.com" target="_blank" rel="noreferrer">
-              TikTok
+            <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+              WhatsApp
             </a>
           </div>
         </div>
@@ -42,6 +40,11 @@ export function ShopFooter() {
           <div className="font-medium mb-2">Contacto</div>
           <ul className="space-y-1 text-cream/70">
             <li>contacto@jmcperfumes.es</li>
+            <li>
+              <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="hover:text-cream/80">
+                WhatsApp
+              </a>
+            </li>
             <li>Lun-Vie 9-18h</li>
           </ul>
         </div>
