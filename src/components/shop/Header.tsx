@@ -20,9 +20,11 @@ export function ShopHeader({ categories }: { categories: { name: string; slug: s
             Explorar
           </Link>
           <div className="group relative">
-            <button className="hover:text-secondary transition">Categorías</button>
+            <button className="hover:text-secondary transition focus:outline-none focus-visible:text-secondary">
+              Categorías
+            </button>
             {categories.length > 0 && (
-              <div className="absolute hidden group-hover:block top-full pt-2 min-w-40">
+              <div className="absolute hidden group-hover:block group-focus-within:block hover:block top-full pt-2 min-w-40">
                 <div className="bg-white border border-border rounded shadow-lg py-1">
                   {categories.map((c) => (
                     <Link
@@ -46,7 +48,7 @@ export function ShopHeader({ categories }: { categories: { name: string; slug: s
         </nav>
 
         <div className="flex items-center gap-4">
-          <Link href="/cart" className="relative text-primary">
+          <Link href="/cart" className="relative text-primary p-2 -m-2 flex items-center justify-center">
             <span aria-hidden>🛍️</span>
             {count > 0 && (
               <span className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
@@ -55,23 +57,52 @@ export function ShopHeader({ categories }: { categories: { name: string; slug: s
             )}
             <span className="sr-only">Carrito</span>
           </Link>
-          <button className="md:hidden text-primary" onClick={() => setMenuOpen((v) => !v)} aria-label="Menú">
-            ☰
+          <button
+            className="md:hidden w-10 h-10 -mr-2 flex items-center justify-center text-primary text-xl"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Menú"
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? "✕" : "☰"}
           </button>
         </div>
       </div>
 
       {menuOpen && (
-        <nav className="md:hidden border-t border-border px-4 py-3 space-y-2 text-sm">
-          <Link href="/products" className="block" onClick={() => setMenuOpen(false)}>
-            Explorar
-          </Link>
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/products?category=${c.slug}`} className="block" onClick={() => setMenuOpen(false)}>
-              {c.name}
+        <>
+          <button
+            aria-hidden
+            tabIndex={-1}
+            className="fixed inset-0 top-[57px] bg-black/20 z-10 md:hidden"
+            onClick={() => setMenuOpen(false)}
+          />
+          <nav className="md:hidden relative z-20 bg-cream border-t border-border px-4 py-3 space-y-1 text-sm">
+            <Link href="/products" className="block py-2.5" onClick={() => setMenuOpen(false)}>
+              Explorar
             </Link>
-          ))}
-        </nav>
+            <Link href="/#about" className="block py-2.5" onClick={() => setMenuOpen(false)}>
+              Sobre nosotros
+            </Link>
+            <Link href="/#contact" className="block py-2.5" onClick={() => setMenuOpen(false)}>
+              Contacto
+            </Link>
+            {categories.length > 0 && (
+              <div className="pt-2 mt-2 border-t border-border">
+                <div className="text-xs uppercase tracking-wide text-primary/40 mb-1">Categorías</div>
+                {categories.map((c) => (
+                  <Link
+                    key={c.slug}
+                    href={`/products?category=${c.slug}`}
+                    className="block py-2.5"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </nav>
+        </>
       )}
     </header>
   );
