@@ -24,33 +24,61 @@ export default function CartPage() {
       <div className="lg:col-span-2 space-y-3">
         <h1 className="font-heading text-2xl text-primary mb-4">Tu carrito</h1>
         {items.map((item) => (
-          <div key={`${item.productId}-${item.variantId ?? ""}`} className="flex items-center gap-4 bg-white border border-border rounded p-3">
-            {item.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded" />
-            ) : (
-              <div className="w-16 h-16 bg-border/30 rounded" />
-            )}
-            <div className="flex-1">
-              <Link href={`/products/${item.slug}`} className="font-medium text-primary hover:text-secondary">
-                {item.name}
-              </Link>
-              {item.sizeMl != null && <div className="text-xs text-primary/50">{item.sizeMl} ml</div>}
-              <div className="text-sm text-primary/60">{formatEUR(item.price)}</div>
+          <div
+            key={`${item.productId}-${item.variantId ?? ""}`}
+            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-white border border-border rounded p-3"
+          >
+            <div className="flex items-start gap-3 sm:contents">
+              {item.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded shrink-0" />
+              ) : (
+                <div className="w-16 h-16 bg-border/30 rounded shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/products/${item.slug}`} className="font-medium text-primary hover:text-secondary">
+                    {item.name}
+                  </Link>
+                  <button
+                    onClick={() => removeItem(item.productId, item.variantId)}
+                    className="sm:hidden w-9 h-9 -mt-1.5 -mr-1.5 flex items-center justify-center text-error text-lg shrink-0"
+                    aria-label="Eliminar del carrito"
+                  >
+                    ×
+                  </button>
+                </div>
+                {item.sizeMl != null && <div className="text-xs text-primary/50">{item.sizeMl} ml</div>}
+                <div className="text-sm text-primary/60">{formatEUR(item.price)}</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)} className="w-7 h-7 border border-border rounded">
-                −
-              </button>
-              <span className="w-6 text-center">{item.quantity}</span>
-              <button onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)} className="w-7 h-7 border border-border rounded">
-                +
+            <div className="flex items-center justify-between sm:justify-end sm:gap-4">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
+                  className="w-9 h-9 flex items-center justify-center border border-border rounded"
+                  aria-label="Reducir cantidad"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center">{item.quantity}</span>
+                <button
+                  onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
+                  className="w-9 h-9 flex items-center justify-center border border-border rounded"
+                  aria-label="Aumentar cantidad"
+                >
+                  +
+                </button>
+              </div>
+              <div className="w-20 text-right font-medium">{formatEUR(item.price * item.quantity)}</div>
+              <button
+                onClick={() => removeItem(item.productId, item.variantId)}
+                className="hidden sm:flex w-9 h-9 items-center justify-center text-error text-lg shrink-0"
+                aria-label="Eliminar del carrito"
+              >
+                ×
               </button>
             </div>
-            <div className="w-20 text-right font-medium">{formatEUR(item.price * item.quantity)}</div>
-            <button onClick={() => removeItem(item.productId, item.variantId)} className="text-error text-sm">
-              ×
-            </button>
           </div>
         ))}
       </div>
