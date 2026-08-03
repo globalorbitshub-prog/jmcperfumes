@@ -105,23 +105,25 @@ export function AddToCartControls({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="w-8 h-8 border border-border rounded"
+              className="w-10 h-10 flex items-center justify-center border border-border rounded"
+              aria-label="Reducir cantidad"
             >
               −
             </button>
             <span className="w-8 text-center">{quantity}</span>
             <button
               onClick={() => setQuantity((q) => Math.min(effectiveStock, q + 1))}
-              className="w-8 h-8 border border-border rounded"
+              className="w-10 h-10 flex items-center justify-center border border-border rounded"
+              aria-label="Aumentar cantidad"
             >
               +
             </button>
           </div>
-          <div className="flex gap-3">
-            <button onClick={add} className="flex-1 border border-secondary text-secondary rounded py-2 text-sm font-medium">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button onClick={add} className="flex-1 border border-secondary text-secondary rounded py-3 sm:py-2 text-sm font-medium">
               Agregar al carrito
             </button>
-            <button onClick={buyNow} className="flex-1 bg-secondary hover:bg-accent transition text-white rounded py-2 text-sm font-medium">
+            <button onClick={buyNow} className="flex-1 bg-secondary hover:bg-accent transition text-white rounded py-3 sm:py-2 text-sm font-medium">
               Comprar ahora
             </button>
           </div>
