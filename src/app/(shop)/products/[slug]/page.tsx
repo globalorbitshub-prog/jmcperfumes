@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { AddToCartControls } from "@/components/shop/AddToCartControls";
 import { ReviewForm } from "@/components/shop/ReviewForm";
+import { ProductImagePlaceholder } from "@/components/shop/ProductImagePlaceholder";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +108,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               // eslint-disable-next-line @next/next/no-img-element
               <img src={product.image_urls[0]} alt={product.image_alts?.[0] || product.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-primary/30">Sin imagen</div>
+              <ProductImagePlaceholder />
             )}
           </div>
           {product.image_urls?.length > 1 && (
@@ -124,7 +125,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
           {product.categories && (
             <span className="text-xs bg-secondary/10 text-secondary rounded px-2 py-1">{product.categories.name}</span>
           )}
-          <h1 className="font-heading text-3xl text-primary mt-2">{product.name}</h1>
+          <h1 className="font-heading text-2xl sm:text-3xl text-primary mt-2">{product.name}</h1>
           {avgRating && (
             <div className="text-accent text-sm mt-1">
               {"★".repeat(Math.round(Number(avgRating)))}
