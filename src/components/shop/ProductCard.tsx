@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatEUR } from "@/lib/utils";
+import { ProductImagePlaceholder } from "@/components/shop/ProductImagePlaceholder";
 
 export interface ProductCardData {
   id: string;
@@ -30,9 +31,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-primary/30 text-sm">
-            Sin imagen
-          </div>
+          <ProductImagePlaceholder />
         )}
         {product.featured && (
           <span className="absolute top-2 left-2 bg-accent text-white text-xs px-2 py-1 rounded">NUEVO</span>
