@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatEUR, formatDate } from "@/lib/utils";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +23,12 @@ export default async function AdminOrdersPage({
   if (searchParams.status) query = query.eq("status", searchParams.status);
   if (searchParams.search)
     query = query.or(`user_email.ilike.%${searchParams.search}%,number.ilike.%${searchParams.search}%`);
-  const { data: orders } = await query;
+  const { data: orders, error } = await query;
 
   return (
     <div className="space-y-4">
       <h1 className="font-heading text-2xl text-primary">Órdenes</h1>
+      {error && <DataLoadError message={error.message} />}
 
       <form className="flex gap-2 flex-wrap">
         <input
@@ -74,7 +76,7 @@ export default async function AdminOrdersPage({
                 <td className="p-3 text-primary/60">{formatDate(o.created_at)}</td>
               </tr>
             ))}
-            {(orders || []).length === 0 && (
+            {!error && (orders || []).length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-primary/50">
                   No hay órdenes que coincidan.
