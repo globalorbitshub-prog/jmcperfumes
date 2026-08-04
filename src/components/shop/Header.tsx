@@ -4,15 +4,26 @@ import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/shop/CartProvider";
 
-export function ShopHeader({ categories }: { categories: { name: string; slug: string }[] }) {
+export function ShopHeader({
+  categories,
+  logoUrl,
+}: {
+  categories: { name: string; slug: string }[];
+  logoUrl?: string | null;
+}) {
   const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-20 bg-cream/95 backdrop-blur border-b border-border">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-heading text-2xl text-primary">
-          JMC Perfumes
+        <Link href="/" className="flex items-center gap-2 font-heading text-2xl text-primary">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="JMC Perfumes" className="h-9 w-auto object-contain" />
+          ) : (
+            "JMC Perfumes"
+          )}
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm text-primary">
