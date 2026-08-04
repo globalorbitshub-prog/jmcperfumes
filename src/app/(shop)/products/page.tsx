@@ -48,7 +48,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
       query = query.order("created_at", { ascending: false });
       break;
     default:
-      query = query.order("featured", { ascending: false });
+            query = query.order("featured", { ascending: false }).order("created_at", { ascending: false });
   }
 
   const { data: productsRaw } = await query;
