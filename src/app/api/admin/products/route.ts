@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   const slug = body.slug?.trim() || slugify(body.name);
 
+  if (typeof body.price !== "number" || Number.isNaN(body.price) || body.price < 0) {
+    return NextResponse.json({ error: "El precio no es válido." }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("products")
     .insert({
@@ -49,7 +53,7 @@ export async function POST(req: NextRequest) {
       notes_top: body.notesTop || null,
       notes_heart: body.notesHeart || null,
       notes_base: body.notesBase || null,
-      stock: body.stock ?? 0,
+      stock: Number.isFinite(body.stock) ? body.stock : 0,
       product_weight: body.productWeight ?? 0.5,
       wallapop_url: body.wallapopUrl || null,
       vinted_url: body.vintedUrl || null,
@@ -61,7 +65,16 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (error.code === "23505") {
+      const field = error.message.includes("slug") ? "esa URL (slug)" : "ese nombre";
+      return NextResponse.json(
+        { error: `Ya existe un producto con ${field}. Edítalo desde la lista de productos en vez de crear uno nuevo, o cambia el nombre/slug.` },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   if (body.variants !== undefined) {
     await syncProductVariants(data.id, body.variants);
