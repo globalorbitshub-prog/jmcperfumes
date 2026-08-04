@@ -1,11 +1,12 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatDate } from "@/lib/utils";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSubscribersPage() {
   const supabase = getSupabaseAdmin();
-  const { data: subscribers } = await supabase
+  const { data: subscribers, error } = await supabase
     .from("subscribers")
     .select("*")
     .order("subscribed_at", { ascending: false });
@@ -28,6 +29,8 @@ export default async function AdminSubscribersPage() {
         <Kpi label="Verificados" value={String(verified)} />
         <Kpi label="% conversión" value={total ? `${Math.round((verified / total) * 100)}%` : "0%"} />
       </div>
+
+      {error && <DataLoadError message={error.message} />}
 
       <div className="bg-white rounded border border-border overflow-x-auto">
         <table className="w-full text-sm">
@@ -58,7 +61,7 @@ export default async function AdminSubscribersPage() {
                 <td className="p-3 text-primary/60">{formatDate(s.subscribed_at)}</td>
               </tr>
             ))}
-            {(subscribers || []).length === 0 && (
+            {!error && (subscribers || []).length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-primary/50">
                   Todavía no hay suscriptores.
