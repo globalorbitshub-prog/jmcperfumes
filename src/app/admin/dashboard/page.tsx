@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatEUR, formatDate } from "@/lib/utils";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -41,10 +42,12 @@ export default async function DashboardPage() {
   const ordersCountToday = ordersToday.data?.length || 0;
   const pendingReviewsCount = reviewsPending.count || 0;
   const lowStockProducts = products.data || [];
+  const loadError = [ordersToday, recentOrders, reviewsPending, products, subscribersToday].find((r) => r.error)?.error;
 
   return (
     <div className="space-y-8">
       <h1 className="font-heading text-2xl text-primary">Dashboard</h1>
+      {loadError && <DataLoadError message={loadError.message} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Ventas hoy" value={formatEUR(salesToday)} />
