@@ -16,12 +16,19 @@ export default function AdminCategoriesPage() {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function load() {
-    const res = await fetch("/api/admin/categories");
-    const data = await res.json();
-    setCategories(data.categories || []);
+    setLoadError(false);
+    try {
+      const res = await fetch("/api/admin/categories");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch {
+      setLoadError(true);
+    }
   }
 
   useEffect(() => {
@@ -57,13 +64,31 @@ export default function AdminCategoriesPage() {
 
   async function remove(id: string) {
     if (!confirm("¿Eliminar esta categoría? Los productos que la usen se quedarán sin categoría.")) return;
-    await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
-    load();
+    try {
+      const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || "No se pudo eliminar la categoría. Inténtalo de nuevo.");
+        return;
+      }
+      load();
+    } catch {
+      alert("Fallo de conexión. Inténtalo de nuevo.");
+    }
   }
 
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-2xl text-primary">Categorías</h1>
+
+      {loadError && (
+        <div className="bg-error/10 border border-error rounded p-4 text-sm text-primary max-w-md">
+          <p className="font-medium text-error mb-1">No se pudieron cargar las categorías.</p>
+          <button onClick={load} className="underline text-sm">
+            Reintentar
+          </button>
+        </div>
+      )}
 
       <form onSubmit={create} className="bg-white border border-border rounded p-4 max-w-md space-y-3">
         <h2 className="font-medium text-primary">Nueva categoría</h2>
