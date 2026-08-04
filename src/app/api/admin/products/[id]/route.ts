@@ -53,6 +53,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (body[camel] !== undefined) update[key] = body[camel];
     else if (body[key] !== undefined) update[key] = body[key];
   }
+  if ("price" in update && (typeof update.price !== "number" || Number.isNaN(update.price) || (update.price as number) < 0)) {
+    return NextResponse.json({ error: "El precio no es válido." }, { status: 400 });
+  }
+  if ("stock" in update && !Number.isFinite(update.stock)) {
+    update.stock = 0;
+  }
   update.updated_at = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -61,7 +67,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .eq("id", params.id)
     .select()
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (error.code === "23505") {
+      const field = error.message.includes("slug") ? "esa URL (slug)" : "ese nombre";
+      return NextResponse.json(
+        { error: `Ya existe otro producto con ${field}. Cambia el nombre o el slug.` },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   if (body.variants !== undefined) {
     await syncProductVariants(params.id, body.variants);
