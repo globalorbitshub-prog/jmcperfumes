@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatEUR, formatDate } from "@/lib/utils";
 import { OrderActions } from "@/components/admin/OrderActions";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,15 @@ interface OrderProductLine {
 
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = getSupabaseAdmin();
-  const { data: order } = await supabase.from("orders").select("*").eq("id", params.id).maybeSingle();
+  const { data: order, error } = await supabase.from("orders").select("*").eq("id", params.id).maybeSingle();
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-heading text-2xl text-primary">Pedido</h1>
+        <DataLoadError message={error.message} />
+      </div>
+    );
+  }
   if (!order) notFound();
 
   const lines: OrderProductLine[] = order.products_json || [];
