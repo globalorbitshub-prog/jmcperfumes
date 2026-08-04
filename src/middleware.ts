@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/admin/jwt";
+import { verifySessionToken, createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_MS } from "@/lib/admin/jwt";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,7 +19,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  // Sliding session: every active request renews the TTL so an admin working
+  // past the original expiry isn't logged out mid-task.
+  const res = NextResponse.next();
+  const refreshedToken = await createSessionToken(session);
+  res.cookies.set(SESSION_COOKIE_NAME, refreshedToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_TTL_MS / 1000,
+  });
+  return res;
 }
 
 export const config = {
