@@ -14,6 +14,7 @@ export default async function LandingPage() {
       .select("id, name, slug, price, stock, image_urls, featured")
       .eq("published", true)
       .eq("featured", true)
+      .order("updated_at", { ascending: false })
       .limit(4),
     supabase.from("categories").select("*").order("order").limit(4),
   ]);
