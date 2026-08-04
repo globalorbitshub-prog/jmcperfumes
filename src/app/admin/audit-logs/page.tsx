@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatDate } from "@/lib/utils";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,12 @@ export default async function AuditLogsPage({
     .limit(100);
   if (searchParams.resource) query = query.eq("resource_type", searchParams.resource);
   if (searchParams.action) query = query.eq("action", searchParams.action);
-  const { data: logs } = await query;
+  const { data: logs, error } = await query;
 
   return (
     <div className="space-y-4">
       <h1 className="font-heading text-2xl text-primary">Auditoría</h1>
+      {error && <DataLoadError message={error.message} />}
 
       <form className="flex gap-2">
         <select name="resource" defaultValue={searchParams.resource || ""} className="border border-border rounded px-3 py-2 text-sm">
@@ -66,7 +68,7 @@ export default async function AuditLogsPage({
                 </td>
               </tr>
             ))}
-            {(logs || []).length === 0 && (
+            {!error && (logs || []).length === 0 && (
               <tr>
                 <td colSpan={4} className="p-6 text-center text-primary/50">
                   Sin registros de auditoría todavía.
