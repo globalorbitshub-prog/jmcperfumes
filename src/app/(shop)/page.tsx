@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
   const supabase = getSupabaseAdmin();
-  const [{ data: featuredRaw }, { data: categories }] = await Promise.all([
+  const [{ data: featuredRaw }, { data: categories }, { data: settingsRows }] = await Promise.all([
     supabase
       .from("products")
       .select("id, name, slug, price, stock, image_urls, featured")
@@ -17,14 +17,23 @@ export default async function LandingPage() {
       .order("updated_at", { ascending: false })
       .limit(4),
     supabase.from("categories").select("*").order("order").limit(4),
+    supabase.from("settings").select("key, value").in("key", ["hero_title", "hero_subtitle", "hero_background_image"]),
   ]);
   const featured = await withVariantPricing(featuredRaw || []);
+  const settings: Record<string, unknown> = {};
+  for (const row of settingsRows || []) settings[row.key] = row.value;
+  const heroTitle = (settings.hero_title as string) || "Descubre tus esencias";
+  const heroSubtitle = (settings.hero_subtitle as string) || "Perfumes premium seleccionados";
+  const heroBackground = settings.hero_background_image as string | undefined;
 
   return (
     <div>
-      <section className="relative bg-gradient-to-br from-secondary/20 via-cream to-accent/10 py-24 px-4 text-center">
-        <h1 className="font-heading text-4xl sm:text-5xl text-primary mb-4">Descubre tus esencias</h1>
-        <p className="text-primary/70 max-w-xl mx-auto mb-8">Perfumes premium seleccionados</p>
+      <section
+        className="relative bg-gradient-to-br from-secondary/20 via-cream to-accent/10 py-24 px-4 text-center bg-cover bg-center"
+        style={heroBackground ? { backgroundImage: `linear-gradient(to bottom right, rgba(139,111,158,0.35), rgba(254,253,249,0.55), rgba(212,165,116,0.25)), url(${heroBackground})` } : undefined}
+      >
+        <h1 className="font-heading text-4xl sm:text-5xl text-primary mb-4">{heroTitle}</h1>
+        <p className="text-primary/70 max-w-xl mx-auto mb-8">{heroSubtitle}</p>
         <Link
           href="/products"
           className="inline-block bg-secondary hover:bg-accent transition text-white rounded px-8 py-3 font-medium"
