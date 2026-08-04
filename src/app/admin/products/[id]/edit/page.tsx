@@ -1,17 +1,28 @@
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const supabase = getSupabaseAdmin();
-  const { data: product } = await supabase
+  const { data: product, error } = await supabase
     .from("products")
     .select("*")
     .eq("id", params.id)
     .maybeSingle();
 
+  // Only 404 when the query actually succeeded and found nothing — a
+  // transient DB error must never be shown as "this product was deleted".
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-heading text-2xl text-primary">Editar producto</h1>
+        <DataLoadError message={error.message} />
+      </div>
+    );
+  }
   if (!product) notFound();
 
   const { data: variants } = await supabase
