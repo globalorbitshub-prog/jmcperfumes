@@ -15,7 +15,7 @@ interface TaxRate {
   tax_percent: number;
 }
 
-const TABS = ["Tienda", "Branding", "Pagos", "Envío", "Impuestos", "General"];
+const TABS = ["Tienda", "Branding", "SEO", "Pagos", "Envío", "Impuestos", "General"];
 
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState("Tienda");
@@ -23,16 +23,42 @@ export default function AdminSettingsPage() {
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
   const [saved, setSaved] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
   async function load() {
-    const [s, sr, tr] = await Promise.all([
-      fetch("/api/admin/settings").then((r) => r.json()),
-      fetch("/api/admin/shipping-rates").then((r) => r.json()),
-      fetch("/api/admin/tax-rates").then((r) => r.json()),
-    ]);
-    setSettings(s.settings || {});
-    setShippingRates(sr.rates || []);
-    setTaxRates(tr.rates || []);
+    setLoadError(false);
+    try {
+      const [sRes, srRes, trRes] = await Promise.all([
+        fetch("/api/admin/settings"),
+        fetch("/api/admin/shipping-rates"),
+        fetch("/api/admin/tax-rates"),
+      ]);
+      if (!sRes.ok || !srRes.ok || !trRes.ok) throw new Error();
+      const [s, sr, tr] = await Promise.all([sRes.json(), srRes.json(), trRes.json()]);
+      setSettings(s.settings || {});
+      setShippingRates(sr.rates || []);
+      setTaxRates(tr.rates || []);
+    } catch {
+      setLoadError(true);
+    }
+  }
+
+  async function uploadImage(key: string, file: File) {
+    setUploadingKey(key);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo subir la imagen.");
+        return;
+      }
+      set(key, data.url);
+    } finally {
+      setUploadingKey(null);
+    }
   }
 
   useEffect(() => {
@@ -92,6 +118,15 @@ export default function AdminSettingsPage() {
         ))}
       </div>
 
+      {loadError && (
+        <div className="bg-error/10 border border-error rounded p-4 text-sm text-primary max-w-2xl">
+          <p className="font-medium text-error mb-1">No se pudo cargar la configuración.</p>
+          <button onClick={load} className="underline text-sm">
+            Reintentar
+          </button>
+        </div>
+      )}
+
       <div className="bg-white border border-border rounded p-6 max-w-2xl space-y-4">
         {tab === "Tienda" && (
           <>
@@ -106,6 +141,53 @@ export default function AdminSettingsPage() {
             <ColorField label="Color primario" value={settings.colors_primary} onChange={(v) => set("colors_primary", v)} />
             <ColorField label="Color secundario" value={settings.colors_secondary} onChange={(v) => set("colors_secondary", v)} />
             <ColorField label="Color acento" value={settings.colors_accent} onChange={(v) => set("colors_accent", v)} />
+            <ImageField
+              label="Logo (aparece en la cabecera de la web)"
+              value={settings.logo_url as string | undefined}
+              uploading={uploadingKey === "logo_url"}
+              onUpload={(f) => uploadImage("logo_url", f)}
+              onClear={() => set("logo_url", "")}
+            />
+            <ImageField
+              label="Imagen de fondo de la portada (sección principal)"
+              value={settings.hero_background_image as string | undefined}
+              uploading={uploadingKey === "hero_background_image"}
+              onUpload={(f) => uploadImage("hero_background_image", f)}
+              onClear={() => set("hero_background_image", "")}
+            />
+            <TextField label="Título de la portada" value={settings.hero_title} onChange={(v) => set("hero_title", v)} />
+            <TextField label="Subtítulo de la portada" value={settings.hero_subtitle} onChange={(v) => set("hero_subtitle", v)} />
+          </>
+        )}
+
+        {tab === "SEO" && (
+          <>
+            <p className="text-xs text-primary/50 -mt-1">
+              Esto es lo que Google muestra en los resultados de búsqueda y lo que se ve al compartir la web en
+              redes sociales. Déjalo en blanco para usar los valores por defecto.
+            </p>
+            <TextField
+              label="Título SEO (aparece en la pestaña del navegador y en Google)"
+              value={settings.seo_title}
+              onChange={(v) => set("seo_title", v)}
+            />
+            <TextAreaField
+              label="Meta descripción (resumen que aparece bajo el título en Google)"
+              value={settings.seo_description}
+              onChange={(v) => set("seo_description", v)}
+            />
+            <TextField
+              label="Palabras clave (separadas por coma)"
+              value={settings.seo_keywords}
+              onChange={(v) => set("seo_keywords", v)}
+            />
+            <ImageField
+              label="Imagen para compartir en redes (Open Graph, 1200×630px recomendado)"
+              value={settings.seo_image as string | undefined}
+              uploading={uploadingKey === "seo_image"}
+              onUpload={(f) => uploadImage("seo_image", f)}
+              onClear={() => set("seo_image", "")}
+            />
           </>
         )}
 
@@ -191,6 +273,59 @@ function TextField({
         onChange={(e) => onChange(e.target.value)}
         className="w-full border border-border rounded px-3 py-2 text-sm"
       />
+    </div>
+  );
+}
+
+function TextAreaField({ label, value, onChange }: { label: string; value: unknown; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="block text-sm text-primary mb-1">{label}</label>
+      <textarea
+        rows={3}
+        maxLength={300}
+        value={(value as string) ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-border rounded px-3 py-2 text-sm"
+      />
+    </div>
+  );
+}
+
+function ImageField({
+  label,
+  value,
+  uploading,
+  onUpload,
+  onClear,
+}: {
+  label: string;
+  value: string | undefined;
+  uploading: boolean;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div>
+      <label className="block text-sm text-primary mb-1">{label}</label>
+      {value ? (
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="" className="h-16 w-16 object-cover rounded border border-border" />
+          <button type="button" onClick={onClear} className="text-error text-xs underline">
+            Quitar
+          </button>
+        </div>
+      ) : (
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          disabled={uploading}
+          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+          className="text-sm"
+        />
+      )}
+      {uploading && <p className="text-xs text-primary/60 mt-1">Subiendo...</p>}
     </div>
   );
 }
