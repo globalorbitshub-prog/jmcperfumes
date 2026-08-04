@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { requireRole } from "@/lib/admin/session";
+import { getAdminSession, requireRole } from "@/lib/admin/session";
 import { writeAuditLog } from "@/lib/admin/audit";
 
 export async function GET() {
+  const session = await getAdminSession();
+  if (!session) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.from("settings").select("*");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
