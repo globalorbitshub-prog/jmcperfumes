@@ -97,14 +97,25 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
 
   async function uploadFiles(files: FileList) {
     setUploading(true);
+    setError(null);
     try {
+      const remainingSlots = 10 - form.imageUrls.length;
+      const toUpload = Array.from(files).slice(0, Math.max(0, remainingSlots));
+      const skipped = files.length - toUpload.length;
+
       const newUrls: string[] = [];
-      for (const file of Array.from(files)) {
+      const failures: string[] = [];
+      for (const file of toUpload) {
         const fd = new FormData();
         fd.append("file", file);
-        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-        const data = await res.json();
-        if (res.ok) newUrls.push(data.url);
+        try {
+          const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+          const data = await res.json();
+          if (res.ok) newUrls.push(data.url);
+          else failures.push(`${file.name}: ${data.error || "error desconocido"}`);
+        } catch {
+          failures.push(`${file.name}: fallo de conexión`);
+        }
       }
       // Functional updates so a slow upload can never clobber other edits
       // made (or a submit that fired) while it was in flight.
@@ -113,6 +124,12 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
         imageUrls: [...f.imageUrls, ...newUrls],
         imageAlts: [...f.imageAlts, ...newUrls.map(() => f.name || "Perfume JMC")],
       }));
+
+      if (skipped > 0) {
+        setError(`Solo se admiten 10 imágenes por producto. Se ignoraron ${skipped} archivo(s) de más.`);
+      } else if (failures.length > 0) {
+        setError(`No se pudieron subir ${failures.length} imagen(es): ${failures.join("; ")}`);
+      }
     } finally {
       setUploading(false);
     }
@@ -206,7 +223,7 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
               step="0.01"
               min="0"
               value={form.price}
-              onChange={(e) => update("price", parseFloat(e.target.value))}
+              onChange={(e) => update("price", parseFloat(e.target.value) || 0)}
               className="input disabled:opacity-50"
             />
           </Field>
@@ -217,7 +234,7 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
               type="number"
               min="0"
               value={form.stock}
-              onChange={(e) => update("stock", parseInt(e.target.value, 10))}
+              onChange={(e) => update("stock", parseInt(e.target.value, 10) || 0)}
               className="input disabled:opacity-50"
             />
           </Field>
@@ -327,6 +344,9 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
             Destacado
           </label>
         </div>
+        <p className="text-xs text-primary/50 -mt-2">
+          En la portada solo se muestran los 4 productos destacados más recientemente editados. Si marcas más de 4, los más antiguos no aparecerán ahí (pero seguirán visibles en el catálogo).
+        </p>
 
         <div className="flex gap-3 pt-4">
           <button
