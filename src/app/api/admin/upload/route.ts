@@ -21,17 +21,25 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const optimized = await sharp(buffer)
-    .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 82 })
-    .toBuffer();
+  let optimized: Buffer;
+  try {
+    optimized = await sharp(buffer)
+      .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+  } catch {
+    return NextResponse.json(
+      { error: "No se pudo procesar esta imagen. Prueba con otro archivo JPG, PNG o WebP (algunas fotos de iPhone en formato HEIC no son compatibles)." },
+      { status: 400 }
+    );
+  }
 
   const filename = `${crypto.randomUUID()}.webp`;
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(filename, optimized, { contentType: "image/webp" });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "No se pudo guardar la imagen. Inténtalo de nuevo." }, { status: 500 });
 
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(filename);
   return NextResponse.json({ url: publicUrlData.publicUrl });
