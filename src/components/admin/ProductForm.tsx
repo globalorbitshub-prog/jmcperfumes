@@ -64,14 +64,24 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
   const router = useRouter();
   const [form, setForm] = useState<ProductFormValues>({ ...EMPTY, ...initial });
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesError, setCategoriesError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
+  function loadCategories() {
+    setCategoriesError(false);
     fetch("/api/admin/categories")
-      .then((r) => r.json())
-      .then((data) => setCategories(data.categories || []));
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => setCategoriesError(true));
+  }
+
+  useEffect(() => {
+    loadCategories();
   }, []);
 
   function update<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
@@ -212,6 +222,14 @@ export function ProductForm({ initial }: { initial?: Partial<ProductFormValues> 
               </option>
             ))}
           </select>
+          {categoriesError && (
+            <p className="text-error text-xs mt-1">
+              No se pudieron cargar las categorías.{" "}
+              <button type="button" onClick={loadCategories} className="underline">
+                Reintentar
+              </button>
+            </p>
+          )}
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
