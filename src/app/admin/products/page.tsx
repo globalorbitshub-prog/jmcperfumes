@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { formatEUR } from "@/lib/utils";
 import { ProductRowActions } from "@/components/admin/ProductRowActions";
+import { DataLoadError } from "@/components/admin/DataLoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function AdminProductsPage({
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (searchParams.search) query = query.ilike("name", `%${searchParams.search}%`);
-  const { data: products } = await query;
+  const { data: products, error } = await query;
 
   return (
     <div className="space-y-4">
@@ -41,6 +42,8 @@ export default async function AdminProductsPage({
         />
         <button className="text-sm border border-border rounded px-3 py-2">Buscar</button>
       </form>
+
+      {error && <DataLoadError message={error.message} />}
 
       <div className="bg-white rounded border border-border overflow-x-auto">
         <table className="w-full text-sm">
@@ -80,7 +83,7 @@ export default async function AdminProductsPage({
                 </td>
               </tr>
             ))}
-            {(products || []).length === 0 && (
+            {!error && (products || []).length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-primary/50">
                   No hay productos todavía.
