@@ -18,12 +18,19 @@ export function ProductRowActions({
   async function toggle(field: "published" | "featured", value: boolean) {
     setLoading(true);
     try {
-      await fetch(`/api/admin/products/${id}`, {
+      const res = await fetch(`/api/admin/products/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: value }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || "No se pudo actualizar el producto. Inténtalo de nuevo.");
+        return;
+      }
       router.refresh();
+    } catch {
+      alert("Fallo de conexión. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -33,8 +40,15 @@ export function ProductRowActions({
     if (!confirm("¿Eliminar este producto? Esta acción se puede revertir por soporte.")) return;
     setLoading(true);
     try {
-      await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || "No se pudo eliminar el producto. Inténtalo de nuevo.");
+        return;
+      }
       router.refresh();
+    } catch {
+      alert("Fallo de conexión. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
